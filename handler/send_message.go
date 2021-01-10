@@ -28,7 +28,7 @@ func SendMessage(c *gin.Context) {
 			return
 		}
 
-		err = LoginViaWeb(wac, c, "qrcodewa.png")
+		err = LoginViaWeb(wac, "qrcodewa.png")
 		if err != nil {
 			_, _ = fmt.Fprintf(os.Stderr, "error logging in: %v\n", err)
 			fmt.Println(os.TempDir() + "whatsappSession.gob")

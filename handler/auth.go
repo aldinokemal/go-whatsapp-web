@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"database/sql"
 	"fmt"
 	qrcodeTerminal "github.com/Baozisoftware/qrcode-terminal-go"
 	"github.com/Rhymen/go-whatsapp"
@@ -26,17 +27,19 @@ func Authenticated(g *gin.Context) {
 		x := c.TableAccount{AccPhone: validation.Phone}
 		data := x.FindByPhone()
 		if data.AccID != 0 {
-			if h.FileExists(c.PathWaSession + data.AccSessionName) {
+			if h.FileExists(c.PathWaSession + data.AccSessionName.String) {
 				results := map[string]string{
 					"message": "This number already logged in",
 				}
 				h.RespondJSON(g, http.StatusOK, results)
 				return
 			} else {
-				_ = x.DelByID()
+				//_ = x.DelByID()
+				//fmt.Println("tidak ada");
 			}
 		}
 
+		//return
 		wac, err := whatsapp.NewConn(5 * time.Second) // Create connection to whatsapp (belum masuk ke proseds login/cek sesion)
 		if err != nil {
 			_, _ = fmt.Fprintf(os.Stderr, "error creating connection: %v\n", err)
@@ -45,7 +48,7 @@ func Authenticated(g *gin.Context) {
 		} else {
 			qrName = "qr_" + validation.Phone + time.Now().String() + ".png"
 			sessionName := validation.Phone + "Session.gob"
-			err = LoginViaWeb(wac, g, validation.Phone)
+			err = LoginViaWeb(wac, validation.Phone)
 			if err != nil {
 				fmt.Println("terjadi kesalahan: ", err.Error())
 				//if h.FileExists("statics/" + qrName) {
@@ -103,7 +106,7 @@ func Login(wac *whatsapp.Conn) error {
 	return nil
 }
 
-func LoginViaWeb(wac *whatsapp.Conn, g *gin.Context, phone string) error {
+func LoginViaWeb(wac *whatsapp.Conn, phone string) error {
 	//load saved session
 	session, err := h.ReadSession(phone)
 	fmt.Println("current session ", session)
@@ -120,17 +123,26 @@ func LoginViaWeb(wac *whatsapp.Conn, g *gin.Context, phone string) error {
 			}
 		}
 	} else {
-		fmt.Println("generate session (png)", session)
+		fmt.Println("prepare to generate session (png)", session)
 		//no saved session -> regular login
 		qr = make(chan string)
 		go func() {
-			fmt.Println("generate session images", session)
-			fmt.Println(c.PathQrCode + qrName)
 			err = qrcode.WriteFile(<-qr, qrcode.Medium, 512, c.PathQrCode+qrName)
 			if err != nil {
 				fmt.Println("salah saat generate qr: ", err.Error())
 			} else {
 				fmt.Println("Stop looping", session)
+			}
+			account := c.TableAccount{
+				AccPhone: phone,
+				AccQrName: sql.NullString{
+					String: qrName,
+					Valid:  true,
+				},
+			}
+			err = account.InsertAccount()
+			if err != nil {
+				fmt.Println("terjadi kesalahan saat menambah data sqlite ", err.Error())
 			}
 		}()
 
@@ -146,10 +158,13 @@ func LoginViaWeb(wac *whatsapp.Conn, g *gin.Context, phone string) error {
 				_ = fmt.Errorf("error saving session: %v\n", err)
 			} else {
 				account := c.TableAccount{
-					AccPhone:       phone,
-					AccSessionName: phone + "Session.gob",
+					AccPhone: phone,
+					AccSessionName: sql.NullString{
+						String: phone + "Session.gob",
+						Valid:  true,
+					},
 				}
-				account.InsertAccount()
+				_ = account.UpdateSessionByPhone()
 			}
 		}()
 	}
