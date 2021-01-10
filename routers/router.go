@@ -13,8 +13,9 @@ func Routers() *gin.Engine {
 	router.LoadHTMLGlob("./templates/*.html") // template
 
 	router.GET("/", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "index.html", "")
+		c.Redirect(http.StatusFound, "/app/home")
 	})
+
 
 	app := router.Group("app", gin.BasicAuth(gin.Accounts{config.BasicAuthUser: config.BasicAuthPswd}))
 	{

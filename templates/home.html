@@ -16,13 +16,28 @@
     <div class="ui grid">
         <div class="eight wide column">
             <h2>Login Whatsapp</h2>
-            <form class="ui form">
+            <form class="ui form" id="formLogin">
                 <div class="field">
-                    <label for="phone">Your Phone (628...)</label>
-                    <input id="phone" type="text" placeholder="(+628X XXX XXX XXX) Your Whatsapp phone..." v-model="phone">
+                    <label for="phone">Your Phone</label>
+                    <div class="ui labeled input focus">
+                        <div class="ui label">
+                            62
+                        </div>
+                        <input id="phone" @keydown.enter.prevent="processLogin" type="text" placeholder="Your Whatsapp phone..." v-model="phone">
+                    </div>
                 </div>
                 <button type="button" class="ui button green" @click="processLogin" >Login</button>
             </form>
+
+            <div style="padding-top: 20px" v-show="qrcode">
+                <div class="ui success message">
+                    <i class="close icon"></i>
+                    <div class="header">
+                        Refresh this browser after you scan barcode
+                    </div>
+                    <p>this barcode image only work in 10 seconds</p>
+                </div>
+            </div>
         </div>
         <div class="eight wide column" v-show="qrcode">
             <img id="qrcode" alt="qrcode" style="width: 500px" src="">
@@ -120,6 +135,9 @@
 
             signAccount: [],
         },
+        created() {
+
+        },
         mounted() {
             this.getSignAcc()
         },
@@ -143,7 +161,7 @@
                     })
             },
             processLogin() {
-                axios.post("/app/login", {"phone": this.phone}, {
+                axios.post("/app/login", {"phone": "62" + this.phone}, {
                     auth: {
                         username: '{{.ba_u}}',
                         password: '{{.ba_p}}'

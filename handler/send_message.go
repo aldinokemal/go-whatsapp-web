@@ -21,42 +21,52 @@ type ValidationSendWA struct {
 func SendMessage(g *gin.Context) {
 	var validation ValidationSendWA
 	if err := g.ShouldBind(&validation); err != nil {
-		h.RespondJSON(g, http.StatusBadRequest, strings.Split(err.Error(), "\n"), "Parameter tidak valid")
+		h.RespondJSON(g, http.StatusBadRequest, strings.Split(err.Error(), "\n"), "parameter tidak valid")
+		return
 	} else {
-		//create new WhatsApp connection
-		wac, err := whatsapp.NewConnWithOptions(&c.WhatsappConfig)
-		if err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "error creating connection: %v\n", err)
-			h.RespondJSON(g, http.StatusBadRequest, nil, fmt.Sprintf("error creating connection: %v\n", err.Error()))
-			return
-		}
+		x := c.TableAccount{AccPhone: validation.From}
+		data := x.FindByPhone()
+		if data.AccID != 0 {
+			if h.FileExists(c.PathWaSession + data.AccSessionName.String) {
+				//create new WhatsApp connection
+				wac, err := whatsapp.NewConnWithOptions(&c.WhatsappConfig)
+				if err != nil {
+					_, _ = fmt.Fprintf(os.Stderr, "error creating connection: %v\n", err)
+					h.RespondJSON(g, http.StatusBadRequest, nil, fmt.Sprintf("error creating connection: %v\n", err.Error()))
+					return
+				}
 
-		sessionName := validation.From + "Session.gob"
-		err = LoginViaWeb(wac, validation.From)
-		if err != nil {
-			err = os.Remove(c.PathWaSession + sessionName)
-			if err != nil {
-				fmt.Println(err.Error())
-			}
+				sessionName := validation.From + "Session.gob"
+				err = LoginViaWeb(wac, validation.From)
+				if err != nil {
+					err = os.Remove(c.PathWaSession + sessionName)
+					if err != nil {
+						fmt.Println(err.Error())
+					}
+				} else {
+					<-time.After(3 * time.Second)
 
-			SendMessage(g)
-		} else {
-			<-time.After(3 * time.Second)
+					msg := whatsapp.TextMessage{
+						Info: whatsapp.MessageInfo{
+							RemoteJid: fmt.Sprintf("%s@s.whatsapp.net", validation.To),
+						},
+						Text: validation.Message,
+					}
 
-			msg := whatsapp.TextMessage{
-				Info: whatsapp.MessageInfo{
-					RemoteJid: fmt.Sprintf("%s@s.whatsapp.net", validation.To),
-				},
-				Text: validation.Message,
-			}
-
-			msgId, err := wac.Send(msg)
-			if err != nil {
-				h.RespondJSON(g, http.StatusInternalServerError, err.Error(), "terjadi kesalahan")
-				return
+					msgId, err := wac.Send(msg)
+					if err != nil {
+						h.RespondJSON(g, http.StatusInternalServerError, err.Error(), "terjadi kesalahan")
+						return
+					} else {
+						h.RespondJSON(g, http.StatusOK, msgId, "message sent")
+						return
+					}
+				}
 			} else {
-				h.RespondJSON(g, http.StatusOK, msgId, "message sent")
+				_ = x.DelByPhone()
 			}
 		}
+
+		h.RespondJSON(g, http.StatusInternalServerError, nil, "nomor ini belum login")
 	}
 }

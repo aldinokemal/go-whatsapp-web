@@ -33,8 +33,7 @@ func Authenticated(g *gin.Context) {
 				h.RespondJSON(g, http.StatusOK, results)
 				return
 			} else {
-				//_ = x.DelByID()
-				//fmt.Println("tidak ada");
+				_ = x.DelByPhone()
 			}
 		}
 
