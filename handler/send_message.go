@@ -3,6 +3,7 @@ package handler
 import (
 	"fmt"
 	"github.com/Rhymen/go-whatsapp"
+	c "github.com/aldinokemal/go-whatsapp-web/config"
 	h "github.com/aldinokemal/go-whatsapp-web/helpers"
 	"github.com/gin-gonic/gin"
 	"net/http"
@@ -12,51 +13,50 @@ import (
 )
 
 type ValidationSendWA struct {
+	From    string `binding:"required" json:"from" form:"from"`
 	To      string `binding:"required" json:"to" form:"to"`
 	Message string `binding:"required" json:"message" form:"message"`
 }
 
-func SendMessage(c *gin.Context) {
+func SendMessage(g *gin.Context) {
 	var validation ValidationSendWA
-	if err := c.ShouldBind(&validation); err != nil {
-		h.RespondJSON(c, http.StatusBadRequest, strings.Split(err.Error(), "\n"), "Parameter tidak valid")
+	if err := g.ShouldBind(&validation); err != nil {
+		h.RespondJSON(g, http.StatusBadRequest, strings.Split(err.Error(), "\n"), "Parameter tidak valid")
 	} else {
 		//create new WhatsApp connection
-		wac, err := whatsapp.NewConn(5 * time.Second)
+		wac, err := whatsapp.NewConnWithOptions(&c.WhatsappConfig)
 		if err != nil {
 			_, _ = fmt.Fprintf(os.Stderr, "error creating connection: %v\n", err)
+			h.RespondJSON(g, http.StatusBadRequest, nil, fmt.Sprintf("error creating connection: %v\n", err.Error()))
 			return
 		}
 
-		err = LoginViaWeb(wac, "qrcodewa.png")
+		sessionName := validation.From + "Session.gob"
+		err = LoginViaWeb(wac, validation.From)
 		if err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "error logging in: %v\n", err)
-			fmt.Println(os.TempDir() + "whatsappSession.gob")
-			err = os.Remove(os.TempDir() + "whatsappSession.gob")
+			err = os.Remove(c.PathWaSession + sessionName)
 			if err != nil {
 				fmt.Println(err.Error())
 			}
 
-			SendMessage(c)
-		}
-
-		<-time.After(3 * time.Second)
-
-		msg := whatsapp.TextMessage{
-			Info: whatsapp.MessageInfo{
-				RemoteJid: fmt.Sprintf("%s@s.whatsapp.net", validation.To),
-			},
-			Text: validation.Message,
-		}
-
-		msgId, err := wac.Send(msg)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, "Terjadi kesalahan")
-			fmt.Fprintf(os.Stderr, "error sending message: %v", err)
-			os.Exit(1)
+			SendMessage(g)
 		} else {
-			fmt.Println("Message Sent -> ID : " + msgId)
-			c.JSON(http.StatusOK, "message sent")
+			<-time.After(3 * time.Second)
+
+			msg := whatsapp.TextMessage{
+				Info: whatsapp.MessageInfo{
+					RemoteJid: fmt.Sprintf("%s@s.whatsapp.net", validation.To),
+				},
+				Text: validation.Message,
+			}
+
+			msgId, err := wac.Send(msg)
+			if err != nil {
+				h.RespondJSON(g, http.StatusInternalServerError, err.Error(), "terjadi kesalahan")
+				return
+			} else {
+				h.RespondJSON(g, http.StatusOK, msgId, "message sent")
+			}
 		}
 	}
 }

@@ -13,7 +13,6 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"time"
 )
 
 var qr chan string
@@ -39,23 +38,17 @@ func Authenticated(g *gin.Context) {
 			}
 		}
 
-		//return
-		wac, err := whatsapp.NewConn(5 * time.Second) // Create connection to whatsapp (belum masuk ke proseds login/cek sesion)
+
+		wac, err := whatsapp.NewConnWithOptions(&c.WhatsappConfig) // Create connection to whatsapp (belum masuk ke proseds login/cek sesion)
 		if err != nil {
 			_, _ = fmt.Fprintf(os.Stderr, "error creating connection: %v\n", err)
 			h.RespondJSON(g, http.StatusBadRequest, nil, fmt.Sprintf("error creating connection: %v\n", err.Error()))
 			return
 		} else {
-			qrName = "qr_" + validation.Phone + time.Now().String() + ".png"
+			qrName = "qr_" + validation.Phone + ".png"
 			sessionName := validation.Phone + "Session.gob"
 			err = LoginViaWeb(wac, validation.Phone)
 			if err != nil {
-				fmt.Println("terjadi kesalahan: ", err.Error())
-				//if h.FileExists("statics/" + qrName) {
-				//
-				//} else {
-				_, _ = fmt.Fprintf(os.Stderr, "error logging in: %v\n", err)
-				fmt.Println(c.PathWaSession + sessionName)
 				err = os.Remove(c.PathWaSession + sessionName)
 				if err != nil {
 					fmt.Println(err.Error())
@@ -66,7 +59,7 @@ func Authenticated(g *gin.Context) {
 			} else {
 				results := map[string]string{
 					"message": "Your QR is generated, please scan it",
-					"image":   qrName,
+					"image":  c.PathQrCode + qrName,
 				}
 				h.RespondJSON(g, http.StatusOK, results)
 				return

@@ -10,11 +10,11 @@ import (
 var DB *sql.DB
 
 type TableAccount struct {
-	AccID          int    `json:"acc_id"`
-	AccPhone       string `json:"acc_phone"`
+	AccID          int            `json:"acc_id"`
+	AccPhone       string         `json:"acc_phone"`
 	AccQrName      sql.NullString `json:"acc_qr_name"`
 	AccSessionName sql.NullString `json:"acc_session_name"`
-	AccCreatedAt   string `json:"acc_created_at"`
+	AccCreatedAt   sql.NullTime   `json:"acc_created_at"`
 }
 
 func DBOpen() {
@@ -54,6 +54,27 @@ func (acc TableAccount) InsertAccount() (err error) {
 		return err
 	}
 	return nil
+}
+
+func (acc TableAccount) FindAll() (data []TableAccount) {
+	query := `SELECT * FROM account WHERE acc_session_name IS NOT NULL`
+	rows, _ := DB.Query(query)
+	defer rows.Close()
+
+	for rows.Next() {
+		var x TableAccount
+		err := rows.Scan(&x.AccID, &x.AccPhone, &x.AccQrName, &x.AccSessionName, &x.AccCreatedAt)
+		if err != nil {
+			log.Fatal(err)
+		}
+		data = append(data, x)
+	}
+	err := rows.Err()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return data
 }
 
 func (acc TableAccount) FindByPhone() (data TableAccount) {

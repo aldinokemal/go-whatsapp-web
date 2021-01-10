@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{.title}}</title>
+    <link rel="stylesheet" type="text/css" href="/statics/assets/semantic.min.css">
+    <script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
+    <script src="/statics/assets/semantic.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.12/dist/vue.js"></script>
+</head>
+<body>
+
+
+<div class="ui container" style="padding-top: 50px" id="app">
+    <div class="ui grid">
+        <div class="eight wide column">
+            <h2>Login Whatsapp</h2>
+            <form class="ui form">
+                <div class="field">
+                    <label for="phone">Your Phone (628...)</label>
+                    <input id="phone" type="text" placeholder="(+628X XXX XXX XXX) Your Whatsapp phone..." v-model="phone">
+                </div>
+                <button type="button" class="ui button green" @click="processLogin" >Login</button>
+            </form>
+        </div>
+        <div class="eight wide column" v-show="qrcode">
+            <img id="qrcode" alt="qrcode" style="width: 500px" src="">
+        </div>
+    </div>
+
+    <div class="ui horizontal divider">
+        Credit by Aldino Kemal
+    </div>
+
+    <div class="ui grid">
+        <div class="sixteen wide column">
+            <h2>Signed In Account</h2>
+            <table class="ui celled table">
+                <thead>
+                <tr>
+                    <th>Phone</th>
+                    <th>Last Login / QR Scan</th>
+                    <th>Action</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr v-for="n in signAccount">
+                    <td>{% n.phone %}</td>
+                    <td>{% n.created %}</td>
+                    <td>
+                        <button class="ui green button" @click="openModalSend(n.phone)">Message</button>
+                        <button class="ui red button" @click="processLogout(n.phone)">Logout</button>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="ui small modal">
+        <i class="close icon"></i>
+        <div class="header">
+            Sent Message
+        </div>
+        <div class="image content">
+            <div class="ui medium image">
+                <img src="/statics/images/system/whatsapp.svg" alt="logo whatsapp" draggable="false">
+            </div>
+            <div class="description">
+                <form class="ui fluid form">
+                    <!--<div class="field">
+                        <label>From</label>
+                        <div class="ui labeled input">
+                            <input type="text" disabled id="send_from">
+                        </div>
+                    </div>-->
+                    <div class="field">
+                        <label for="send_to">To</label>
+                        <div class="ui labeled input focus">
+                            <div class="ui label">
+                                62
+                            </div>
+                            <input id="send_to" type="text" placeholder="89685024091 (without space)" v-model="send_to">
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label for="send_message">Message</label>
+                        <textarea id="send_message" rows="2" v-model="send_message"></textarea>
+                    </div>
+                </form>
+
+                <div class="ui header">Information</div>
+                <p>Don't use it to spam people, or your number will be banned</p>
+            </div>
+        </div>
+        <div class="actions">
+            <div class="ui black deny button">
+                Cancel
+            </div>
+            <div class="ui positive right labeled icon button" @click="processSendMessage">
+                Send
+                <i class="send icon"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    new Vue({
+        delimiters: ['{%', '%}'],
+        el: "#app",
+        data: {
+            phone: "",
+            qrcode: "",
+
+            send_from: "",
+            send_to: "",
+            send_message: "",
+
+            signAccount: [],
+        },
+        mounted() {
+            this.getSignAcc()
+        },
+        methods: {
+            openModalSend(phone) {
+                $('.small.modal').modal('show');
+                this.send_from = phone
+                $("#send_from").val(phone)
+            },
+            getSignAcc() {
+                axios.get("/app/home/get-account", {
+                    auth: {
+                        username: '{{.ba_u}}',
+                        password: '{{.ba_p}}'
+                    }
+                })
+                    .then(response => {
+                        if (response.status === 200) {
+                            this.signAccount = response.data.results
+                        }
+                    })
+            },
+            processLogin() {
+                axios.post("/app/login", {"phone": this.phone}, {
+                    auth: {
+                        username: '{{.ba_u}}',
+                        password: '{{.ba_p}}'
+                    }
+                })
+                    .then(response => {
+                        this.qrcode = "/" + response.data.results.image
+                        setTimeout(() => {
+                            $("#qrcode").attr("src", this.qrcode)
+                        }, 500)
+                    })
+            },
+            processLogout(phone) {
+                axios.post("/app/logout", {phone}, {
+                    auth: {
+                        username: '{{.ba_u}}',
+                        password: '{{.ba_p}}'
+                    }
+                })
+                    .then(() => this.getSignAcc())
+            },
+            processSendMessage() {
+                let formData = {
+                    from: this.send_from,
+                    to: "62" + this.send_to,
+                    message: this.send_message,
+                }
+                axios.post("/app/wa/send", formData, {
+                    auth: {
+                        username: '{{.ba_u}}',
+                        password: '{{.ba_p}}'
+                    }
+                })
+                    .then(() => {
+                        this.getSignAcc()
+                    })
+            }
+        }
+    })
+
+</script>
+</body>
+</html>
