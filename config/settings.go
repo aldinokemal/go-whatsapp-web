@@ -7,6 +7,8 @@ import (
 )
 
 var (
+	AppPort string
+
 	PathQrCode    string
 	PathWaSession string
 	BasicAuthUser string
@@ -16,6 +18,8 @@ var (
 )
 
 func SetupEnv() {
+	AppPort = ":" + os.Getenv("APP_PORT")
+
 	PathQrCode = "statics/images/qrcode/"
 	PathWaSession = "storage/session/"
 

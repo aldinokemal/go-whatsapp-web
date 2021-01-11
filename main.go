@@ -19,5 +19,5 @@ func main() {
 	c.SetupEnv()
 
 	app := r.Routers()
-	_ = app.Run(":8000")
+	_ = app.Run(c.AppPort)
 }
