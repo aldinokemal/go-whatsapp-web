@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 )
 
 var qr chan string
@@ -123,18 +124,21 @@ func LoginViaWeb(wac *whatsapp.Conn, phone string) error {
 			if err != nil {
 				fmt.Println("salah saat generate qr: ", err.Error())
 			} else {
-				fmt.Println("Stop looping", session)
-			}
-			account := c.TableAccount{
-				AccAppID: phone,
-				AccQrName: sql.NullString{
-					String: qrName,
-					Valid:  true,
-				},
-			}
-			err = account.InsertAccount()
-			if err != nil {
-				fmt.Println("terjadi kesalahan saat menambah data sqlite ", err.Error())
+				// remove qrcode after 10 seconds
+				del := func() { _ = os.Remove(c.PathQrCode + qrName) }
+				time.AfterFunc(10*time.Second, del)
+
+				account := c.TableAccount{
+					AccAppID: phone,
+					AccQrName: sql.NullString{
+						String: qrName,
+						Valid:  true,
+					},
+				}
+				err = account.InsertAccount()
+				if err != nil {
+					fmt.Println("terjadi kesalahan saat menambah data sqlite ", err.Error())
+				}
 			}
 		}()
 
@@ -142,25 +146,25 @@ func LoginViaWeb(wac *whatsapp.Conn, phone string) error {
 			session, err = wac.Login(qr)
 			if err != nil {
 				_ = fmt.Errorf("error during login: %v\n", err)
-			}
-
-			// Save Session
-			err = h.WriteSession(session, phone)
-			if err != nil {
-				_ = fmt.Errorf("error saving session: %v\n", err)
 			} else {
-				account := c.TableAccount{
-					AccAppID: phone,
-					AccWaID: sql.NullString{
-						String: session.Wid,
-						Valid:  true,
-					},
-					AccSessionName: sql.NullString{
-						String: phone + "Session.gob",
-						Valid:  true,
-					},
+				// Save Session
+				err = h.WriteSession(session, phone)
+				if err != nil {
+					_ = fmt.Errorf("error saving session: %v\n", err)
+				} else {
+					account := c.TableAccount{
+						AccAppID: phone,
+						AccWaID: sql.NullString{
+							String: session.Wid,
+							Valid:  true,
+						},
+						AccSessionName: sql.NullString{
+							String: phone + "Session.gob",
+							Valid:  true,
+						},
+					}
+					_ = account.UpdateSessionByAppID()
 				}
-				_ = account.UpdateSessionByAppID()
 			}
 		}()
 	}

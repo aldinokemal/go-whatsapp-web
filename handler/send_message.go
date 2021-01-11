@@ -13,7 +13,7 @@ import (
 )
 
 type ValidationSendText struct {
-	AppID   string `binding:"required" json:"from" form:"from"`
+	AppID   string `binding:"required" json:"app_id" form:"app_id"`
 	To      string `binding:"required" json:"to" form:"to"`
 	Message string `binding:"required" json:"message" form:"message"`
 }

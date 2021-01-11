@@ -86,7 +86,7 @@
         <div class="ui icon header">
             <img src="/statics/images/system/whatsapp.svg" alt="logo whatsapp" draggable="false"
                  style="max-width: 28px">
-            <span>Sent Text Message</span>
+            <span>Send Text Message</span>
         </div>
         <div class="image content">
             <div class="">
@@ -126,12 +126,15 @@
 
     <div class="ui small modal" id="modalSendImage">
         <i class="close icon"></i>
-        <div class="header">
-            Sent Image
+        <div class="ui icon header">
+            <img src="/statics/images/system/whatsapp.svg" alt="logo whatsapp" draggable="false"
+                 style="max-width: 28px">
+            <span>Send Image</span>
         </div>
         <div class="image content">
             <div class="ui medium image">
-                <img src="/statics/images/system/whatsapp.svg" alt="logo whatsapp" draggable="false">
+                <input id="send_image_image" type="file" alt="upload image" @change="displayImage">
+                <img id="previewImage" src="" alt="preview image upload" draggable="false" style="visibility: hidden">
             </div>
             <div class="description">
                 <form class="ui fluid form">
@@ -142,12 +145,12 @@
                                 62
                             </div>
                             <input id="send_image_to" type="text" placeholder="89685024091 (without space)"
-                                   v-model="send_text_to">
+                                   v-model="send_image_to">
                         </div>
                     </div>
                     <div class="field">
                         <label for="send_image_caption">Message</label>
-                        <textarea id="send_image_caption" rows="2" v-model="send_text_message"></textarea>
+                        <textarea id="send_image_caption" rows="2" v-model="send_image_caption"></textarea>
                     </div>
                 </form>
 
@@ -160,7 +163,7 @@
             <div class="ui black deny button">
                 Cancel
             </div>
-            <div class="ui positive right labeled icon button" @click="processSendMessage">
+            <div class="ui positive right labeled icon button" @click="processSendImage">
                 Send
                 <i class="send icon"></i>
             </div>
@@ -176,7 +179,7 @@
             app_id: "",
             qrcode: "",
 
-            send_text_from: "",
+            send_text_app: "",
             send_text_to: "",
             send_text_message: "",
 
@@ -195,13 +198,21 @@
         methods: {
             openModalSend(app_id) {
                 $('#modalSendText').modal('show');
-                this.send_text_from = app_id
-                $("#send_text_from").val(app_id)
+                this.send_text_app = app_id
             },
             openModalImage(app_id) {
                 $('#modalSendImage').modal('show');
                 this.send_image_app = app_id
-                $("#send_text_from").val(app_id)
+            },
+            displayImage(data) {
+                const file = data.target.files[0]
+                const reader = new FileReader();
+                reader.addEventListener("load", function () {
+                    $("#previewImage").attr("src", reader.result)
+                        .removeAttr('style')
+                        .width('350px');
+                }, false);
+                if (file) reader.readAsDataURL(file);
             },
             getSignAcc() {
                 axios.get("/app/home/get-account")
@@ -229,11 +240,27 @@
             },
             processSendMessage() {
                 let formData = {
-                    from: this.send_text_from,
+                    app_id: this.send_text_app,
                     to: "62" + this.send_text_to,
                     message: this.send_text_message,
                 }
                 axios.post("/app/send/text", formData)
+                    .then(() => {
+                        this.getSignAcc()
+                    })
+                    .catch(err => {
+                        console.log(err.response)
+                        alert(err.response.data.message)
+                    })
+            },
+            processSendImage() {
+                let formData = new FormData()
+                formData.append("app_id", this.send_image_app)
+                formData.append("to", "62" + this.send_image_to)
+                formData.append("caption", this.send_image_caption)
+                formData.append("image", $("#send_image_image").prop('files')[0])
+
+                axios.post("/app/send/image", formData)
                     .then(() => {
                         this.getSignAcc()
                     })

@@ -13,7 +13,7 @@ import (
 )
 
 type ValidationSendImage struct {
-	AppID   string `binding:"required" json:"from" form:"from"`
+	AppID   string `binding:"required" json:"app_id" form:"app_id"`
 	To      string `binding:"required" json:"to" form:"to"`
 	Caption string `json:"caption" form:"caption"`
 }
