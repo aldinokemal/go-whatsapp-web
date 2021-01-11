@@ -25,7 +25,7 @@ func GetAccount(g *gin.Context) {
 	for _, d := range data {
 		x := map[string]interface{}{
 			"id":       d.AccID,
-			"phone":    d.AccPhone,
+			"app_id":   d.AccAppID,
 			"phone_id": strings.Split(d.AccWaID.String, "@")[0],
 			"created":  d.AccCreatedAt.Time.Format("January 2, 2006 15:04:05"),
 		}

@@ -23,9 +23,9 @@ func Authenticated(g *gin.Context) {
 	if err := g.ShouldBind(&validation); err != nil {
 		h.RespondJSON(g, http.StatusBadRequest, strings.Split(err.Error(), "\n"), "Parameter tidak valid")
 	} else {
-		validation.Phone = strings.ToLower(strings.Trim(validation.Phone, " "))
-		x := c.TableAccount{AccPhone: validation.Phone}
-		data := x.FindByPhone()
+		validation.AppID = strings.ToLower(strings.Trim(validation.AppID, " "))
+		x := c.TableAccount{AccAppID: validation.AppID}
+		data := x.FindByAppID()
 		if data.AccID != 0 {
 			if h.FileExists(c.PathWaSession + data.AccSessionName.String) {
 				results := map[string]string{
@@ -34,7 +34,7 @@ func Authenticated(g *gin.Context) {
 				h.RespondJSON(g, http.StatusInternalServerError, results)
 				return
 			} else {
-				_ = x.DelByPhone()
+				_ = x.DelByAppID()
 			}
 		}
 
@@ -44,9 +44,9 @@ func Authenticated(g *gin.Context) {
 			h.RespondJSON(g, http.StatusBadRequest, nil, fmt.Sprintf("error creating connection: %v\n", err.Error()))
 			return
 		} else {
-			qrName = "qr_" + validation.Phone + ".png"
-			sessionName := validation.Phone + "Session.gob"
-			err = LoginViaWeb(wac, validation.Phone)
+			qrName = "qr_" + validation.AppID + ".png"
+			sessionName := validation.AppID + "Session.gob"
+			err = LoginViaWeb(wac, validation.AppID)
 			if err != nil {
 				err = os.Remove(c.PathWaSession + sessionName)
 				if err != nil {
@@ -126,7 +126,7 @@ func LoginViaWeb(wac *whatsapp.Conn, phone string) error {
 				fmt.Println("Stop looping", session)
 			}
 			account := c.TableAccount{
-				AccPhone: phone,
+				AccAppID: phone,
 				AccQrName: sql.NullString{
 					String: qrName,
 					Valid:  true,
@@ -150,7 +150,7 @@ func LoginViaWeb(wac *whatsapp.Conn, phone string) error {
 				_ = fmt.Errorf("error saving session: %v\n", err)
 			} else {
 				account := c.TableAccount{
-					AccPhone: phone,
+					AccAppID: phone,
 					AccWaID: sql.NullString{
 						String: session.Wid,
 						Valid:  true,
@@ -160,7 +160,7 @@ func LoginViaWeb(wac *whatsapp.Conn, phone string) error {
 						Valid:  true,
 					},
 				}
-				_ = account.UpdateSessionByPhone()
+				_ = account.UpdateSessionByAppID()
 			}
 		}()
 	}

@@ -19,10 +19,10 @@
             <h2>Login Whatsapp</h2>
             <form class="ui form" id="formLogin">
                 <div class="field">
-                    <label for="phone">Your App Name</label>
+                    <label for="app_id">Your App Name</label>
                     <div class="ui labeled input focus">
-                        <input id="phone" @keydown.enter.prevent="processLogin" type="text"
-                               placeholder="Prefer App Name is Your Whatsapp phone..." v-model="phone">
+                        <input id="app_id" @keydown.enter.prevent="processLogin" type="text"
+                               placeholder="Prefer App Name is Your Whatsapp phone..." v-model="app_id">
                     </div>
                 </div>
                 <button type="button" class="ui button green" @click="processLogin">Login</button>
@@ -61,19 +61,19 @@
                 </thead>
                 <tbody>
                 <tr v-for="n in signAccount">
-                    <td>{% n.phone %}</td>
+                    <td>{% n.app_id %}</td>
                     <td>{% n.phone_id %}</td>
                     <td>{% n.created %}</td>
                     <td>
                         <div class="ui buttons">
-                            <button class="ui green button" @click="openModalSend(n.phone)">
+                            <button class="ui green button" @click="openModalSend(n.app_id)">
                                 <i class="envelope icon"></i>Text
                             </button>
-                            <button class="ui orange button">
+                            <button class="ui orange button" @click="openModalImage(n.app_id)">
                                 <i class="file image icon"></i>Image
                             </button>
                         </div>
-                        <button class="ui red button" @click="processLogout(n.phone)">Logout</button>
+                        <button class="ui red button" @click="processLogout(n.app_id)">Logout</button>
                     </td>
                 </tr>
                 </tbody>
@@ -173,7 +173,7 @@
         delimiters: ['{%', '%}'],
         el: "#app",
         data: {
-            phone: "",
+            app_id: "",
             qrcode: "",
 
             send_text_from: "",
@@ -187,24 +187,24 @@
             signAccount: [],
         },
         created() {
-
+            axios.defaults.headers.common['Authorization'] = 'Basic ' + btoa('{{.ba_u}}:{{.ba_p}}');
         },
         mounted() {
             this.getSignAcc()
         },
         methods: {
-            openModalSend(phone) {
+            openModalSend(app_id) {
                 $('#modalSendText').modal('show');
-                this.send_text_from = phone
-                $("#send_text_from").val(phone)
+                this.send_text_from = app_id
+                $("#send_text_from").val(app_id)
+            },
+            openModalImage(app_id) {
+                $('#modalSendImage').modal('show');
+                this.send_image_app = app_id
+                $("#send_text_from").val(app_id)
             },
             getSignAcc() {
-                axios.get("/app/home/get-account", {
-                    auth: {
-                        username: '{{.ba_u}}',
-                        password: '{{.ba_p}}'
-                    }
-                })
+                axios.get("/app/home/get-account")
                     .then(response => {
                         if (response.status === 200) {
                             this.signAccount = response.data.results
@@ -212,12 +212,7 @@
                     })
             },
             processLogin() {
-                axios.post("/app/login", {"phone": this.phone}, {
-                    auth: {
-                        username: '{{.ba_u}}',
-                        password: '{{.ba_p}}'
-                    }
-                })
+                axios.post("/app/login", {"app_id": this.app_id})
                     .then(response => {
                         this.qrcode = "/" + response.data.results.image
                         setTimeout(() => {
@@ -228,13 +223,8 @@
                         alert(err.response.data.results.message)
                     })
             },
-            processLogout(phone) {
-                axios.post("/app/logout", {phone}, {
-                    auth: {
-                        username: '{{.ba_u}}',
-                        password: '{{.ba_p}}'
-                    }
-                })
+            processLogout(app_id) {
+                axios.post("/app/logout", {app_id})
                     .then(() => this.getSignAcc())
             },
             processSendMessage() {
@@ -243,12 +233,7 @@
                     to: "62" + this.send_text_to,
                     message: this.send_text_message,
                 }
-                axios.post("/app/send/text", formData, {
-                    auth: {
-                        username: '{{.ba_u}}',
-                        password: '{{.ba_p}}'
-                    }
-                })
+                axios.post("/app/send/text", formData)
                     .then(() => {
                         this.getSignAcc()
                     })

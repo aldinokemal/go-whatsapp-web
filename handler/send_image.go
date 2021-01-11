@@ -51,8 +51,8 @@ func SendImage(g *gin.Context) {
 					return
 				} else {
 					// Process Send Images
-					x := c.TableAccount{AccPhone: validation.AppID}
-					data := x.FindByPhone()
+					x := c.TableAccount{AccAppID: validation.AppID}
+					data := x.FindByAppID()
 					if data.AccID != 0 {
 						if h.FileExists(c.PathWaSession + data.AccSessionName.String) {
 							//create new WhatsApp connection
@@ -104,7 +104,7 @@ func SendImage(g *gin.Context) {
 								}
 							}
 						} else {
-							_ = x.DelByPhone()
+							_ = x.DelByAppID()
 							h.RespondJSON(g, http.StatusInternalServerError, nil, "mohon untuk login ulang")
 							return
 						}

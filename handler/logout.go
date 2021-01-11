@@ -16,16 +16,16 @@ func AuthLogout(g *gin.Context) {
 	if err := g.ShouldBind(&validation); err != nil {
 		h.RespondJSON(g, http.StatusBadRequest, strings.Split(err.Error(), "\n"), "Parameter tidak valid")
 	} else {
-		x := c.TableAccount{AccPhone: validation.Phone}
-		data := x.FindByPhone()
+		x := c.TableAccount{AccAppID: validation.AppID}
+		data := x.FindByAppID()
 		if data.AccID != 0 {
 			BasePath, _ := os.Getwd()
 			fmt.Println(data)
 			fmt.Print(BasePath + "/" + c.PathWaSession + data.AccSessionName.String)
-			_ = x.DelByPhone()
+			_ = x.DelByAppID()
 			_ = os.Remove(c.PathWaSession + data.AccSessionName.String)
 		}
 
-		h.RespondJSON(g, http.StatusOK, nil, "Logout success")
+		h.RespondJSON(g, http.StatusOK, data, "Logout success")
 	}
 }
