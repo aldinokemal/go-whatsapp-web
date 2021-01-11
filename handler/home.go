@@ -5,6 +5,7 @@ import (
 	h "github.com/aldinokemal/go-whatsapp-web/helpers"
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"strings"
 )
 
 func Home(g *gin.Context) {
@@ -25,7 +26,7 @@ func GetAccount(g *gin.Context) {
 		x := map[string]interface{}{
 			"id":       d.AccID,
 			"phone":    d.AccPhone,
-			"phone_id": d.AccWaID.String,
+			"phone_id": strings.Split(d.AccWaID.String, "@")[0],
 			"created":  d.AccCreatedAt.Time.Format("January 2, 2006 15:04:05"),
 		}
 		response = append(response, x)

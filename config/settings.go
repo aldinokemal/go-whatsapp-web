@@ -10,6 +10,7 @@ var (
 	AppPort string
 
 	PathQrCode    string
+	PathWaImage string
 	PathWaSession string
 	BasicAuthUser string
 	BasicAuthPswd string
@@ -21,6 +22,7 @@ func SetupEnv() {
 	AppPort = ":" + os.Getenv("APP_PORT")
 
 	PathQrCode = "statics/images/qrcode/"
+	PathWaImage = "statics/images/wa_images/"
 	PathWaSession = "storage/session/"
 
 	BasicAuthUser = os.Getenv("BASIC_AUTH_USER")

@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{.title}}</title>
     <link rel="stylesheet" type="text/css" href="/statics/assets/semantic.min.css">
     <script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
@@ -53,7 +54,7 @@
                 <thead>
                 <tr>
                     <th>App ID</th>
-                    <th>Phone ID</th>
+                    <th>Phone</th>
                     <th>Last Login / QR Scan</th>
                     <th>Action</th>
                 </tr>
@@ -64,7 +65,14 @@
                     <td>{% n.phone_id %}</td>
                     <td>{% n.created %}</td>
                     <td>
-                        <button class="ui green button" @click="openModalSend(n.phone)">Message</button>
+                        <div class="ui buttons">
+                            <button class="ui green button" @click="openModalSend(n.phone)">
+                                <i class="envelope icon"></i>Text
+                            </button>
+                            <button class="ui orange button">
+                                <i class="file image icon"></i>Image
+                            </button>
+                        </div>
                         <button class="ui red button" @click="processLogout(n.phone)">Logout</button>
                     </td>
                 </tr>
@@ -73,10 +81,53 @@
         </div>
     </div>
 
-    <div class="ui small modal">
+    <div class="ui tiny modal" id="modalSendText">
+        <i class="close icon"></i>
+        <div class="ui icon header">
+            <img src="/statics/images/system/whatsapp.svg" alt="logo whatsapp" draggable="false"
+                 style="max-width: 28px">
+            <span>Sent Text Message</span>
+        </div>
+        <div class="image content">
+            <div class="">
+                <form class="ui form">
+                    <div class="field" style="width: auto">
+                        <label for="send_text_to">To</label>
+                        <div class="ui labeled input focus">
+                            <div class="ui label">
+                                62
+                            </div>
+                            <input id="send_text_to" type="text" placeholder="89685024091 (without space)"
+                                   v-model="send_text_to">
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label for="send_text_message">Message</label>
+                        <textarea id="send_text_message" rows="2" v-model="send_text_message"></textarea>
+                    </div>
+                </form>
+
+                <div class="ui header">Information</div>
+                <p>Make sure your whatsapp is <b>connected to internet</b> and don't use it to spam people, or your
+                    number will be banned</p>
+            </div>
+        </div>
+        <div class="actions">
+            <div class="ui black deny button">
+                Cancel
+            </div>
+            <div class="ui positive right labeled icon button" @click="processSendMessage">
+                Send
+                <i class="send icon"></i>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="ui small modal" id="modalSendImage">
         <i class="close icon"></i>
         <div class="header">
-            Sent Message
+            Sent Image
         </div>
         <div class="image content">
             <div class="ui medium image">
@@ -84,29 +135,25 @@
             </div>
             <div class="description">
                 <form class="ui fluid form">
-                    <!--<div class="field">
-                        <label>From</label>
-                        <div class="ui labeled input">
-                            <input type="text" disabled id="send_from">
-                        </div>
-                    </div>-->
                     <div class="field">
-                        <label for="send_to">To</label>
+                        <label for="send_text_to">To</label>
                         <div class="ui labeled input focus">
                             <div class="ui label">
                                 62
                             </div>
-                            <input id="send_to" type="text" placeholder="89685024091 (without space)" v-model="send_to">
+                            <input id="send_image_to" type="text" placeholder="89685024091 (without space)"
+                                   v-model="send_text_to">
                         </div>
                     </div>
                     <div class="field">
-                        <label for="send_message">Message</label>
-                        <textarea id="send_message" rows="2" v-model="send_message"></textarea>
+                        <label for="send_image_caption">Message</label>
+                        <textarea id="send_image_caption" rows="2" v-model="send_text_message"></textarea>
                     </div>
                 </form>
 
                 <div class="ui header">Information</div>
-                <p>Make sure your whatsapp is <b>connected to internet</b> and don't use it to spam people, or your number will be banned</p>
+                <p>Make sure your whatsapp is <b>connected to internet</b> and don't use it to spam people, or your
+                    number will be banned</p>
             </div>
         </div>
         <div class="actions">
@@ -129,9 +176,13 @@
             phone: "",
             qrcode: "",
 
-            send_from: "",
-            send_to: "",
-            send_message: "",
+            send_text_from: "",
+            send_text_to: "",
+            send_text_message: "",
+
+            send_image_app: "",
+            send_image_to: "",
+            send_image_caption: "",
 
             signAccount: [],
         },
@@ -143,9 +194,9 @@
         },
         methods: {
             openModalSend(phone) {
-                $('.small.modal').modal('show');
-                this.send_from = phone
-                $("#send_from").val(phone)
+                $('#modalSendText').modal('show');
+                this.send_text_from = phone
+                $("#send_text_from").val(phone)
             },
             getSignAcc() {
                 axios.get("/app/home/get-account", {
@@ -188,11 +239,11 @@
             },
             processSendMessage() {
                 let formData = {
-                    from: this.send_from,
-                    to: "62" + this.send_to,
-                    message: this.send_message,
+                    from: this.send_text_from,
+                    to: "62" + this.send_text_to,
+                    message: this.send_text_message,
                 }
-                axios.post("/app/wa/send", formData, {
+                axios.post("/app/send/text", formData, {
                     auth: {
                         username: '{{.ba_u}}',
                         password: '{{.ba_p}}'
@@ -200,6 +251,10 @@
                 })
                     .then(() => {
                         this.getSignAcc()
+                    })
+                    .catch(err => {
+                        console.log(err.response)
+                        alert(err.response.data.message)
                     })
             }
         }

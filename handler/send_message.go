@@ -12,19 +12,19 @@ import (
 	"time"
 )
 
-type ValidationSendWA struct {
-	From    string `binding:"required" json:"from" form:"from"`
+type ValidationSendText struct {
+	AppID   string `binding:"required" json:"from" form:"from"`
 	To      string `binding:"required" json:"to" form:"to"`
 	Message string `binding:"required" json:"message" form:"message"`
 }
 
 func SendMessage(g *gin.Context) {
-	var validation ValidationSendWA
+	var validation ValidationSendText
 	if err := g.ShouldBind(&validation); err != nil {
 		h.RespondJSON(g, http.StatusBadRequest, strings.Split(err.Error(), "\n"), "parameter tidak valid")
 		return
 	} else {
-		x := c.TableAccount{AccPhone: validation.From}
+		x := c.TableAccount{AccPhone: validation.AppID}
 		data := x.FindByPhone()
 		if data.AccID != 0 {
 			if h.FileExists(c.PathWaSession + data.AccSessionName.String) {
@@ -36,8 +36,8 @@ func SendMessage(g *gin.Context) {
 					return
 				}
 
-				sessionName := validation.From + "Session.gob"
-				err = LoginViaWeb(wac, validation.From)
+				sessionName := validation.AppID + "Session.gob"
+				err = LoginViaWeb(wac, validation.AppID)
 				if err != nil {
 					err = os.Remove(c.PathWaSession + sessionName)
 					if err != nil {

@@ -16,7 +16,6 @@ func Routers() *gin.Engine {
 		c.Redirect(http.StatusFound, "/app/home")
 	})
 
-
 	app := router.Group("app", gin.BasicAuth(gin.Accounts{config.BasicAuthUser: config.BasicAuthPswd}))
 	{
 		app.GET("home", handler.Home)
@@ -25,7 +24,8 @@ func Routers() *gin.Engine {
 		app.POST("login", handler.Authenticated)
 		app.POST("logout", handler.AuthLogout)
 
-		app.POST("wa/send", handler.SendMessage)
+		app.POST("send/text", handler.SendMessage)
+		app.POST("send/image", handler.SendImage)
 
 		router.GET("/history", handler.ReadHistory)
 	}
