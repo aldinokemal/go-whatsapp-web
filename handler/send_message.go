@@ -64,9 +64,13 @@ func SendMessage(g *gin.Context) {
 				}
 			} else {
 				_ = x.DelByPhone()
+				h.RespondJSON(g, http.StatusInternalServerError, nil, "mohon untuk login ulang")
+				return
 			}
+		} else {
+			h.RespondJSON(g, http.StatusInternalServerError, nil, "nomor ini belum login")
+			return
 		}
 
-		h.RespondJSON(g, http.StatusInternalServerError, nil, "nomor ini belum login")
 	}
 }

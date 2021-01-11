@@ -18,24 +18,22 @@
             <h2>Login Whatsapp</h2>
             <form class="ui form" id="formLogin">
                 <div class="field">
-                    <label for="phone">Your Phone</label>
+                    <label for="phone">Your App Name</label>
                     <div class="ui labeled input focus">
-                        <div class="ui label">
-                            62
-                        </div>
-                        <input id="phone" @keydown.enter.prevent="processLogin" type="text" placeholder="Your Whatsapp phone..." v-model="phone">
+                        <input id="phone" @keydown.enter.prevent="processLogin" type="text"
+                               placeholder="Prefer App Name is Your Whatsapp phone..." v-model="phone">
                     </div>
                 </div>
-                <button type="button" class="ui button green" @click="processLogin" >Login</button>
+                <button type="button" class="ui button green" @click="processLogin">Login</button>
             </form>
 
             <div style="padding-top: 20px" v-show="qrcode">
                 <div class="ui success message">
                     <i class="close icon"></i>
                     <div class="header">
-                        Refresh this browser after you scan barcode
+                        Refresh this browser after you scan qrcode
                     </div>
-                    <p>this barcode image only work in 10 seconds</p>
+                    <p>this qrcode image only work in 10 seconds</p>
                 </div>
             </div>
         </div>
@@ -54,7 +52,8 @@
             <table class="ui celled table">
                 <thead>
                 <tr>
-                    <th>Phone</th>
+                    <th>App ID</th>
+                    <th>Phone ID</th>
                     <th>Last Login / QR Scan</th>
                     <th>Action</th>
                 </tr>
@@ -62,6 +61,7 @@
                 <tbody>
                 <tr v-for="n in signAccount">
                     <td>{% n.phone %}</td>
+                    <td>{% n.phone_id %}</td>
                     <td>{% n.created %}</td>
                     <td>
                         <button class="ui green button" @click="openModalSend(n.phone)">Message</button>
@@ -106,7 +106,7 @@
                 </form>
 
                 <div class="ui header">Information</div>
-                <p>Don't use it to spam people, or your number will be banned</p>
+                <p>Make sure your whatsapp is <b>connected to internet</b> and don't use it to spam people, or your number will be banned</p>
             </div>
         </div>
         <div class="actions">
@@ -161,7 +161,7 @@
                     })
             },
             processLogin() {
-                axios.post("/app/login", {"phone": "62" + this.phone}, {
+                axios.post("/app/login", {"phone": this.phone}, {
                     auth: {
                         username: '{{.ba_u}}',
                         password: '{{.ba_p}}'
@@ -172,6 +172,9 @@
                         setTimeout(() => {
                             $("#qrcode").attr("src", this.qrcode)
                         }, 500)
+                    })
+                    .catch(err => {
+                        alert(err.response.data.results.message)
                     })
             },
             processLogout(phone) {

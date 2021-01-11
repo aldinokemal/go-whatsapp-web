@@ -23,9 +23,10 @@ func GetAccount(g *gin.Context) {
 	data := dataAccount.FindAll()
 	for _, d := range data {
 		x := map[string]interface{}{
-			"id":      d.AccID,
-			"phone":   d.AccPhone,
-			"created": d.AccCreatedAt.Time.Format("January 2, 2006 15:04:05"),
+			"id":       d.AccID,
+			"phone":    d.AccPhone,
+			"phone_id": d.AccWaID.String,
+			"created":  d.AccCreatedAt.Time.Format("January 2, 2006 15:04:05"),
 		}
 		response = append(response, x)
 	}

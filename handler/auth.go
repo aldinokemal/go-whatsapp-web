@@ -23,20 +23,20 @@ func Authenticated(g *gin.Context) {
 	if err := g.ShouldBind(&validation); err != nil {
 		h.RespondJSON(g, http.StatusBadRequest, strings.Split(err.Error(), "\n"), "Parameter tidak valid")
 	} else {
+		validation.Phone = strings.ToLower(strings.Trim(validation.Phone, " "))
 		x := c.TableAccount{AccPhone: validation.Phone}
 		data := x.FindByPhone()
 		if data.AccID != 0 {
 			if h.FileExists(c.PathWaSession + data.AccSessionName.String) {
 				results := map[string]string{
-					"message": "This number already logged in",
+					"message": "This App Name already in used",
 				}
-				h.RespondJSON(g, http.StatusOK, results)
+				h.RespondJSON(g, http.StatusInternalServerError, results)
 				return
 			} else {
 				_ = x.DelByPhone()
 			}
 		}
-
 
 		wac, err := whatsapp.NewConnWithOptions(&c.WhatsappConfig) // Create connection to whatsapp (belum masuk ke proseds login/cek sesion)
 		if err != nil {
@@ -58,7 +58,7 @@ func Authenticated(g *gin.Context) {
 			} else {
 				results := map[string]string{
 					"message": "Your QR is generated, please scan it",
-					"image":  c.PathQrCode + qrName,
+					"image":   c.PathQrCode + qrName,
 				}
 				h.RespondJSON(g, http.StatusOK, results)
 				return
@@ -151,6 +151,10 @@ func LoginViaWeb(wac *whatsapp.Conn, phone string) error {
 			} else {
 				account := c.TableAccount{
 					AccPhone: phone,
+					AccWaID: sql.NullString{
+						String: session.Wid,
+						Valid:  true,
+					},
 					AccSessionName: sql.NullString{
 						String: phone + "Session.gob",
 						Valid:  true,

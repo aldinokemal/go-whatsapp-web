@@ -12,6 +12,7 @@ var DB *sql.DB
 type TableAccount struct {
 	AccID          int            `json:"acc_id"`
 	AccPhone       string         `json:"acc_phone"`
+	AccWaID        sql.NullString `json:"acc_wa_id"`
 	AccQrName      sql.NullString `json:"acc_qr_name"`
 	AccSessionName sql.NullString `json:"acc_session_name"`
 	AccCreatedAt   sql.NullTime   `json:"acc_created_at"`
@@ -26,6 +27,7 @@ func createTable(db *sql.DB) {
 	createAccountTable := `CREATE TABLE IF NOT EXISTS account (
 		"acc_id" integer NOT NULL PRIMARY KEY AUTOINCREMENT,		
 		"acc_phone" TEXT UNIQUE,
+		"acc_wa_id" TEXT,
 		"acc_qr_name" TEXT,
 		"acc_session_name" TEXT,
         "acc_created_at" timestamp default (datetime('now','localtime'))
@@ -63,7 +65,7 @@ func (acc TableAccount) FindAll() (data []TableAccount) {
 
 	for rows.Next() {
 		var x TableAccount
-		err := rows.Scan(&x.AccID, &x.AccPhone, &x.AccQrName, &x.AccSessionName, &x.AccCreatedAt)
+		err := rows.Scan(&x.AccID, &x.AccPhone, &x.AccWaID, &x.AccQrName, &x.AccSessionName, &x.AccCreatedAt)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -81,7 +83,7 @@ func (acc TableAccount) FindByPhone() (data TableAccount) {
 	query := `SELECT * FROM account WHERE acc_phone = ?`
 	row := DB.QueryRow(query, acc.AccPhone)
 	fmt.Print()
-	err := row.Scan(&data.AccID, &data.AccPhone, &data.AccQrName, &data.AccSessionName, &data.AccCreatedAt)
+	err := row.Scan(&data.AccID, &data.AccPhone, &data.AccWaID, &data.AccQrName, &data.AccSessionName, &data.AccCreatedAt)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
@@ -90,12 +92,12 @@ func (acc TableAccount) FindByPhone() (data TableAccount) {
 }
 
 func (acc TableAccount) UpdateSessionByPhone() (err error) {
-	query := `UPDATE account SET acc_session_name = ? WHERE acc_phone = ?`
+	query := `UPDATE account SET acc_session_name = ?, acc_wa_id = ? WHERE acc_phone = ?`
 	statement, err := DB.Prepare(query) // Prepare SQL Statement
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	_, err = statement.Exec(acc.AccSessionName, acc.AccPhone) // Prepare SQL Statement
+	_, err = statement.Exec(acc.AccSessionName, acc.AccWaID.String, acc.AccPhone) // Prepare SQL Statement
 	if err != nil {
 		return err
 	}
