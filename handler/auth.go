@@ -22,7 +22,7 @@ var qrName string
 func Authenticated(g *gin.Context) {
 	var validation structs.ValidateLogin
 	if err := g.ShouldBind(&validation); err != nil {
-		h.RespondJSON(g, http.StatusBadRequest, strings.Split(err.Error(), "\n"), "Parameter tidak valid")
+		h.RespondJSON(g, http.StatusBadRequest, strings.Split(err.Error(), "\n"), "parameter tidak valid (minimal 3 karakter)")
 	} else {
 		validation.AppID = strings.ToLower(strings.Trim(validation.AppID, " "))
 		x := c.TableAccount{AccAppID: validation.AppID}
