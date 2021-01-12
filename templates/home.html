@@ -235,8 +235,10 @@
                     })
             },
             processLogout(app_id) {
-                axios.post("/app/logout", {app_id})
-                    .then(() => this.getSignAcc())
+                let agree = confirm(`anda yakin untuk menghapus ${app_id} ?`)
+                if (agree){
+                    axios.post("/app/logout", {app_id}).then(() => this.getSignAcc())
+                }
             },
             processSendMessage() {
                 let formData = {
