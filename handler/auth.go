@@ -16,7 +16,6 @@ import (
 	"time"
 )
 
-var qr chan string
 var qrName string
 
 func Authenticated(g *gin.Context) {
@@ -45,6 +44,9 @@ func Authenticated(g *gin.Context) {
 			h.RespondJSON(g, http.StatusBadRequest, nil, fmt.Sprintf("error creating connection: %v\n", err.Error()))
 			return
 		} else {
+			wac.SetClientVersion(2, 2126, 14)
+
+			//err = Login(wac)
 			qrName = "qr_" + validation.AppID + ".png"
 			sessionName := validation.AppID + "Session.gob"
 			err = LoginViaWeb(wac, validation.AppID)
@@ -52,10 +54,10 @@ func Authenticated(g *gin.Context) {
 				err = os.Remove(c.PathWaSession + sessionName)
 				if err != nil {
 					fmt.Println(err.Error())
+					h.RespondJSON(g, http.StatusInternalServerError, err.Error())
 				}
 
 				Authenticated(g)
-				//}
 			} else {
 				results := map[string]string{
 					"message": "Your QR is generated, please scan it",
@@ -85,6 +87,7 @@ func Login(wac *whatsapp.Conn) error {
 			terminal := qrcodeTerminal.New()
 			terminal.Get(<-qr).Print()
 		}()
+		fmt.Println(qr)
 		session, err = wac.Login(qr)
 		if err != nil {
 			return fmt.Errorf("error during login: %v\n", err)
@@ -103,7 +106,7 @@ func LoginViaWeb(wac *whatsapp.Conn, phone string) error {
 	//load saved session
 	session, err := h.ReadSession(phone)
 	fmt.Println("current session ", session)
-	if err == nil {
+	if err == nil { // Jika session ketemu
 		//restore session
 		session, err = wac.RestoreWithSession(session)
 		if err != nil {
@@ -115,12 +118,12 @@ func LoginViaWeb(wac *whatsapp.Conn, phone string) error {
 				return fmt.Errorf("error saving session: %v\n", err)
 			}
 		}
-	} else {
-		fmt.Println("prepare to generate session (png)", session)
-		//no saved session -> regular login
-		qr = make(chan string)
+	} else { // Jika session tidak ketemu
+		qr := make(chan string)
 		go func() {
-			err = qrcode.WriteFile(<-qr, qrcode.Medium, 512, c.PathQrCode+qrName)
+			dataQr := <-qr
+			fmt.Println(dataQr)
+			err = qrcode.WriteFile(dataQr, qrcode.Medium, 512, c.PathQrCode+qrName)
 			if err != nil {
 				fmt.Println("salah saat generate qr: ", err.Error())
 			} else {
@@ -143,10 +146,13 @@ func LoginViaWeb(wac *whatsapp.Conn, phone string) error {
 		}()
 
 		go func() {
+			fmt.Println("proses Login...")
+			fmt.Println(qr)
 			session, err = wac.Login(qr)
 			if err != nil {
-				_ = fmt.Errorf("error during login: %v\n", err)
+				fmt.Println(err.Error())
 			} else {
+				fmt.Println("session didapatkan...")
 				// Save Session
 				err = h.WriteSession(session, phone)
 				if err != nil {

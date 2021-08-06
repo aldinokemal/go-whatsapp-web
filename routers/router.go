@@ -1,7 +1,6 @@
 package routers
 
 import (
-	"github.com/aldinokemal/go-whatsapp-web/config"
 	"github.com/aldinokemal/go-whatsapp-web/handler"
 	"github.com/gin-gonic/gin"
 	"net/http"
@@ -16,7 +15,8 @@ func Routers() *gin.Engine {
 		c.Redirect(http.StatusFound, "/app/home")
 	})
 
-	app := router.Group("app", gin.BasicAuth(gin.Accounts{config.BasicAuthUser: config.BasicAuthPswd}))
+	//app := router.Group("app", gin.BasicAuth(gin.Accounts{config.BasicAuthUser: config.BasicAuthPswd}))
+	app := router.Group("app")
 	{
 		app.GET("home", handler.Home)
 		app.GET("home/get-account", handler.GetAccount)
